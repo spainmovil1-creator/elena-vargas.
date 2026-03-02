@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400;1,500&family=Jost:wght@200;300;400;500&display=swap" rel="stylesheet">
-
+<link rel="stylesheet" href="/src/mailerlite.css">
 <style>
 /* ── RESET & BASE ─────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -213,8 +213,8 @@ nav {
   transform: rotate(3deg) translateX(10px);
   z-index: 3;
 }
-.book-stack:hover img:nth-child(1) { transform: rotate(-6deg) translateX(-30px); }
-.book-stack:hover img:nth-child(3) { transform: rotate(5deg) translateX(20px); }
+.book-stack:hover img:nth-child(1) { transform: rotate(-7deg) translateX(-120px); }
+.book-stack:hover img:nth-child(3) { transform: rotate(12deg) translateX(120px); }
 
 /* ── SECTION HEADERS ──────────────────────────────────────── */
 .section-header { text-align: center; margin-bottom: 64px; }
@@ -678,6 +678,91 @@ nav {
   font-size: 11px; color: var(--text-2); line-height: 1.8;
 }
 
+/* ── UPSELL MODAL ─────────────────────────────────────── */
+.upsell-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.55);
+  z-index: 2000;
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+.upsell-overlay.open { opacity: 1; pointer-events: all; }
+.upsell-modal {
+  background: var(--white);
+  border-radius: var(--radius);
+  padding: 36px 32px 28px;
+  max-width: 420px; width: 100%;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+}
+.upsell-modal h3 {
+  font-family: var(--serif);
+  font-size: 1.4rem; font-weight: 400;
+  margin-bottom: 10px; color: var(--text);
+}
+.upsell-modal p {
+  font-size: 13px; color: var(--text-2);
+  line-height: 1.6; margin-bottom: 24px;
+}
+.upsell-modal .price-compare {
+  display: flex; justify-content: center; gap: 16px;
+  align-items: baseline; margin-bottom: 24px;
+}
+.upsell-modal .price-old {
+  font-size: 14px; color: var(--text-2);
+  text-decoration: line-through;
+}
+.upsell-modal .price-new {
+  font-family: var(--serif); font-size: 2rem; color: var(--text);
+}
+.upsell-modal .price-badge {
+  font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase;
+  background: var(--gold); color: white;
+  padding: 3px 8px; border-radius: 20px;
+}
+.upsell-btn-collection {
+  display: block; width: 100%;
+  font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase;
+  font-weight: 400; font-family: var(--sans);
+  padding: 15px; margin-bottom: 10px;
+  background: var(--gold); color: white;
+  border-radius: var(--radius);
+  transition: background var(--transition);
+}
+.upsell-btn-collection:hover { background: #8a6e3e; }
+.upsell-btn-separate {
+  display: block; width: 100%;
+  font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase;
+  font-weight: 400; font-family: var(--sans);
+  padding: 13px;
+  background: transparent; color: var(--text-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  transition: all var(--transition);
+  cursor: pointer;
+}
+.upsell-btn-separate:hover { color: var(--text); border-color: var(--text); }
+.upsell-link-item {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+.upsell-link-item:last-child { border-bottom: none; }
+.upsell-link-item-title { color: var(--text); text-align: left; font-family: var(--serif); }
+.upsell-link-item-btn {
+  font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase;
+  font-weight: 400; font-family: var(--sans);
+  padding: 6px 14px;
+  background: var(--text); color: white;
+  border-radius: var(--radius);
+  white-space: nowrap; margin-left: 12px;
+  transition: background var(--transition);
+}
+.upsell-link-item-btn:hover { background: var(--gold); }
+
 /* ── CART MOBILE BAR ──────────────────────────────────────── */
 .cart-mobile-bar {
   display: none;
@@ -830,12 +915,31 @@ footer {
   .cart-mobile-bar { display: flex; }
   .footer-links { gap: 16px; }
 }
+
 </style>
 </head>
 <body>
-
 <!-- TOAST NOTIFICATION -->
 <div class="toast" id="toast"></div>
+
+<!-- UPSELL MODAL -->
+<div class="upsell-overlay" id="upsell-overlay" onclick="closeUpsell(event)">
+  <div class="upsell-modal">
+    <h3>¿Y si te llevas los seis?</h3>
+    <p>Tienes <span id="upsell-count">varios libros</span> seleccionados. Con la colección completa tienes los 6 volúmenes y ahorras más.</p>
+    <div class="price-compare">
+      <span class="price-old" id="upsell-old-price"></span>
+      <span class="price-new">49,90 €</span>
+      <span class="price-badge">30% dto.</span>
+    </div>
+    <a id="upsell-btn-yes" href="#" class="upsell-btn-collection">Sí, quiero la colección completa</a>
+    <div id="upsell-separate-links" style="display:none; margin-top:10px;">
+      <p style="font-size:11px; color:var(--text-2); text-transform:uppercase; letter-spacing:0.1em; margin-bottom:10px;">O compra cada libro por separado:</p>
+      <div id="upsell-links-list"></div>
+    </div>
+    <button class="upsell-btn-separate" id="upsell-btn-separate" onclick="showSeparateLinks()">No, comprar solo mis libros</button>
+  </div>
+</div>
 
 <!-- CART OVERLAY -->
 <div class="cart-overlay" id="cart-overlay" onclick="closeCart()"></div>
@@ -901,9 +1005,9 @@ footer {
   </div>
   <div class="hero-visual">
     <div class="book-stack">
-      <img src="libro6.jpg" alt="La Única Certeza" loading="lazy">
-      <img src="libro1.jpg" alt="El Espejo que Miente" loading="lazy">
-      <img src="libro4.jpg" alt="El Eco del Silencio" loading="lazy">
+      <img src="https://picsum.photos/seed/book6/300/450" alt="La Única Certeza" loading="lazy">
+      <img src="https://picsum.photos/seed/book1/300/450" alt="El Espejo que Miente" loading="lazy">
+      <img src="https://picsum.photos/seed/book4/300/450" alt="El Eco del Silencio" loading="lazy">
     </div>
   </div>
 </section>
@@ -943,9 +1047,9 @@ footer {
 
     <div class="books-grid" id="books-grid">
 
-      <div class="book-card" data-id="1" data-title="El Espejo que Miente" data-vol="Vol. I" data-img="libro1.jpg" data-price="11.90">
+      <div class="book-card" data-id="1" data-title="El Espejo que Miente" data-vol="Vol. I" data-img="https://picsum.photos/seed/book1/300/450" data-price="11.90">
         <div class="book-card-img">
-          <img src="libro1.jpg" alt="El Espejo que Miente" loading="lazy">
+          <img src="https://picsum.photos/seed/book1/300/450" alt="El Espejo que Miente" loading="lazy">
         </div>
         <div class="book-card-body">
           <span class="book-vol">Vol. I</span>
@@ -958,9 +1062,9 @@ footer {
         </div>
       </div>
 
-      <div class="book-card" data-id="2" data-title="El Peso que No Se Ve" data-vol="Vol. II" data-img="libro2.jpg" data-price="11.90">
+      <div class="book-card" data-id="2" data-title="El Peso que No Se Ve" data-vol="Vol. II" data-img="https://picsum.photos/seed/book2/300/450" data-price="11.90">
         <div class="book-card-img">
-          <img src="libro2.jpg" alt="El Peso que No Se Ve" loading="lazy">
+          <img src="https://picsum.photos/seed/book2/300/450" alt="El Peso que No Se Ve" loading="lazy">
         </div>
         <div class="book-card-body">
           <span class="book-vol">Vol. II</span>
@@ -973,9 +1077,9 @@ footer {
         </div>
       </div>
 
-      <div class="book-card" data-id="3" data-title="Cuando el Mañana te Secuestra" data-vol="Vol. III" data-img="libro3.jpg" data-price="11.90">
+      <div class="book-card" data-id="3" data-title="Cuando el Mañana te Secuestra" data-vol="Vol. III" data-img="https://picsum.photos/seed/book3/300/450" data-price="11.90">
         <div class="book-card-img">
-          <img src="libro3.jpg" alt="Cuando el Mañana te Secuestra" loading="lazy">
+          <img src="https://picsum.photos/seed/book3/300/450" alt="Cuando el Mañana te Secuestra" loading="lazy">
         </div>
         <div class="book-card-body">
           <span class="book-vol">Vol. III</span>
@@ -988,9 +1092,9 @@ footer {
         </div>
       </div>
 
-      <div class="book-card" data-id="4" data-title="El Día que Dejé de Ser lo que Era" data-vol="Vol. IV" data-img="libro5.jpg" data-price="11.90">
+      <div class="book-card" data-id="4" data-title="El Día que Dejé de Ser lo que Era" data-vol="Vol. IV" data-img="https://picsum.photos/seed/book5/300/450" data-price="11.90">
         <div class="book-card-img">
-          <img src="libro5.jpg" alt="El Día que Dejé de Ser lo que Era" loading="lazy">
+          <img src="https://picsum.photos/seed/book5/300/450" alt="El Día que Dejé de Ser lo que Era" loading="lazy">
         </div>
         <div class="book-card-body">
           <span class="book-vol">Vol. IV</span>
@@ -1003,9 +1107,9 @@ footer {
         </div>
       </div>
 
-      <div class="book-card" data-id="5" data-title="La Única Certeza" data-vol="Vol. V" data-img="libro6.jpg" data-price="11.90">
+      <div class="book-card" data-id="5" data-title="La Única Certeza" data-vol="Vol. V" data-img="https://picsum.photos/seed/book6/300/450" data-price="11.90">
         <div class="book-card-img">
-          <img src="libro6.jpg" alt="La Única Certeza" loading="lazy">
+          <img src="https://picsum.photos/seed/book6/300/450" alt="La Única Certeza" loading="lazy">
         </div>
         <div class="book-card-body">
           <span class="book-vol">Vol. V</span>
@@ -1018,9 +1122,9 @@ footer {
         </div>
       </div>
 
-      <div class="book-card" data-id="6" data-title="El Eco del Silencio" data-vol="Vol. VI" data-img="libro4.jpg" data-price="11.90">
+      <div class="book-card" data-id="6" data-title="El Eco del Silencio" data-vol="Vol. VI" data-img="https://picsum.photos/seed/book4/300/450" data-price="11.90">
         <div class="book-card-img">
-          <img src="libro4.jpg" alt="El Eco del Silencio" loading="lazy">
+          <img src="https://picsum.photos/seed/book4/300/450" alt="El Eco del Silencio" loading="lazy">
         </div>
         <div class="book-card-body">
           <span class="book-vol">Vol. VI</span>
@@ -1070,11 +1174,7 @@ footer {
     <div class="author-grid">
       <div class="author-img-wrap">
         <div class="author-img">
-          <!-- Sustituye el div interior por: <img src="foto-autora.jpg" alt="Dra. Elena Vargas"> -->
-          <div class="author-img-placeholder">
-            Foto de la<br>Dra. Elena Vargas<br><br>
-            <small style="font-size:12px;opacity:.7">(sustituir por foto real)</small>
-          </div>
+			<img src="https://picsum.photos/seed/author/400/500" alt="Dra. Elena Vargas">
         </div>
         <p class="author-cap">Dra. Elena Vargas · Psicóloga Clínica</p>
       </div>
@@ -1151,17 +1251,162 @@ footer {
     <div class="gold-line center"></div>
     <h3 class="lead-h3">Recibe el primer capítulo de <em>El Espejo que Miente</em> de forma gratuita.</h3>
     <p class="lead-sub">Sin compromiso. Sin suscripción a listas interminables. Solo el primer capítulo para que decidas con calma si este libro es para ti.</p>
-    <form class="lead-form" onsubmit="handleLeadForm(event)">
-      <div class="form-field">
-        <input type="text" placeholder="Tu nombre" required id="lead-name">
+    
+    <div id="mlb2-37760055" class="ml-form-embedContainer ml-subscribe-form ml-subscribe-form-37760055">
+      <div class="ml-form-align-center ">
+        <div class="ml-form-embedWrapper embedForm">
+
+          
+          <div class="ml-form-embedHeader">
+            
+              <img src="https://storage.mlcdn.com/account_image/2139507/dZZYhkMuQsWFW1T8EEbUkgo6olni0FxlyFEMmcFD.png" border="0" style="display: block;">
+              
+              <style>
+                @media only screen and (max-width: 400px){
+                  .ml-form-embedHeader { display: none !important; }
+                }
+              </style>
+
+            
+          </div>
+
+          <div class="ml-form-embedBody ml-form-embedBodyDefault row-form">
+
+            <div class="ml-form-embedContent" style=" ">
+              
+                <h4>Boletín informativo</h4>
+                <p>¡Suscríbete para recibir noticias y ofertas especiales!</p>
+              
+            </div>
+
+            <form class="ml-block-form" action="https://assets.mailerlite.com/jsonp/2139507/forms/180567539292570730/subscribe" data-code="" method="post" target="_blank">
+              <div class="ml-form-formContent">
+                
+
+                  
+                  <div class="ml-form-fieldRow ">
+                    <div class="ml-field-group ml-field-name">
+
+                      
+
+
+                      <!-- input -->
+                      <input aria-label="name" type="text" class="form-control" data-inputmask="" name="fields[name]" placeholder="Nombre" autocomplete="given-name">
+                      <!-- /input -->
+
+                      <!-- textarea -->
+                      
+                      <!-- /textarea -->
+
+                      <!-- select -->
+                      
+                      <!-- /select -->
+
+                      <!-- checkboxes -->
+            
+            <!-- /checkboxes -->
+
+                      <!-- radio -->
+                      
+                      <!-- /radio -->
+
+                      <!-- countries -->
+                      
+                      <!-- /countries -->
+
+
+
+
+
+                    </div>
+                  </div><div class="ml-form-fieldRow ml-last-item">
+                    <div class="ml-field-group ml-field-email ml-validate-email ml-validate-required">
+
+                      
+
+
+                      <!-- input -->
+                      <input aria-label="email" aria-required="true" type="email" class="form-control" data-inputmask="" name="fields[email]" placeholder="Email" autocomplete="email">
+                      <!-- /input -->
+
+                      <!-- textarea -->
+                      
+                      <!-- /textarea -->
+
+                      <!-- select -->
+                      
+                      <!-- /select -->
+
+                      <!-- checkboxes -->
+            
+            <!-- /checkboxes -->
+
+                      <!-- radio -->
+                      
+                      <!-- /radio -->
+
+                      <!-- countries -->
+                      
+                      <!-- /countries -->
+
+
+
+
+
+                    </div>
+                  </div>
+                
+              </div>
+
+              
+
+              <!-- Privacy policy -->
+              
+              <!-- /Privacy policy -->
+
+              
+
+              
+
+              
+
+
+
+
+
+
+              
+              <input type="hidden" name="ml-submit" value="1">
+
+              <div class="ml-form-embedSubmit">
+                
+                  <button type="submit" class="primary">Suscribirse</button>
+                
+                <button disabled="disabled" style="display: none;" type="button" class="loading">
+                  <div class="ml-form-embedSubmitLoad"></div>
+                  <span class="sr-only">Loading...</span>
+                </button>
+              </div>
+
+              
+              <input type="hidden" name="anticsrf" value="true">
+            </form>
+          </div>
+
+          <div class="ml-form-successBody row-success" style="display: none">
+
+            <div class="ml-form-successContent">
+              
+                <h4>¡Muchas gracias!</h4>
+                <p>Te has unido con éxito a nuestra lista de suscriptores.</p>
+              
+            </div>
+
+          </div>
+        </div>
       </div>
-      <div class="form-field">
-        <input type="email" placeholder="tu@email.com" required id="lead-email">
-      </div>
-      <button type="submit" class="btn-primary" style="align-self:center">
-        Quiero el capítulo gratuito
-      </button>
-    </form>
+    </div>
+
     <p class="lead-footer">Tus datos no se ceden a terceros. Puedes darte de baja cuando quieras.</p>
   </div>
 </section>
@@ -1228,6 +1473,7 @@ footer {
     <div class="gold-line center"></div>
     <h2 class="final-h2">Llevas tiempo sabiendo que algo necesita cambiar.<br>Aquí está el primer paso.</h2>
     <div class="final-cta-group">
+	  <img src="https://picsum.photos/seed/collection/500/300" />
       <button class="btn-primary gold" onclick="addCollectionToCart()">Colección completa — 49,90 €</button>
       <a href="#books" class="btn-secondary" style="color:#888">O elige un solo libro desde 11,90 €</a>
     </div>
@@ -1263,12 +1509,12 @@ footer {
 let cart = []; // { id, title, vol, img, price, isCollection }
 
 const BOOKS = {
-  1: { id:1, title:'El Espejo que Miente',           vol:'Vol. I',   img:'libro1.jpg', price:11.90 },
-  2: { id:2, title:'El Peso que No Se Ve',            vol:'Vol. II',  img:'libro2.jpg', price:11.90 },
-  3: { id:3, title:'Cuando el Mañana te Secuestra',   vol:'Vol. III', img:'libro3.jpg', price:11.90 },
-  4: { id:4, title:'El Día que Dejé de Ser lo que Era',vol:'Vol. IV', img:'libro5.jpg', price:11.90 },
-  5: { id:5, title:'La Única Certeza',                vol:'Vol. V',   img:'libro6.jpg', price:11.90 },
-  6: { id:6, title:'El Eco del Silencio',             vol:'Vol. VI',  img:'libro4.jpg', price:11.90 },
+  1: { id:1, title:'El Espejo que Miente',           vol:'Vol. I',   img:'https://picsum.photos/seed/book1/300/450', price:11.90 },
+  2: { id:2, title:'El Peso que No Se Ve',            vol:'Vol. II',  img:'https://picsum.photos/seed/book2/300/450', price:11.90 },
+  3: { id:3, title:'Cuando el Mañana te Secuestra',   vol:'Vol. III', img:'https://picsum.photos/seed/book3/300/450', price:11.90 },
+  4: { id:4, title:'El Día que Dejé de Ser lo que Era',vol:'Vol. IV', img:'https://picsum.photos/seed/book5/300/450', price:11.90 },
+  5: { id:5, title:'La Única Certeza',                vol:'Vol. V',   img:'https://picsum.photos/seed/book6/300/450', price:11.90 },
+  6: { id:6, title:'El Eco del Silencio',             vol:'Vol. VI',  img:'https://picsum.photos/seed/book4/300/450', price:11.90 },
 };
 
 /* ── ADD INDIVIDUAL BOOK ────────────────────────────────── */
@@ -1290,7 +1536,7 @@ function addToCart(btn) {
 
 /* ── ADD COLLECTION ─────────────────────────────────────── */
 function addCollectionToCart() {
-  cart = [{ id:'col', title:'Colección completa «La Consulta»', vol:'Vols. I–VI', img:'libro1.jpg', price:49.90, isCollection:true }];
+  cart = [{ id:'col', title:'Colección completa «La Consulta»', vol:'Vols. I–VI', img:'https://picsum.photos/seed/book1/300/450', price:49.90, isCollection:true }];
   // Reset all buttons
   document.querySelectorAll('.btn-add').forEach(b => {
     b.textContent = 'Añadir'; b.classList.remove('added');
@@ -1391,11 +1637,68 @@ function closeCart() {
 }
 
 /* ── CHECKOUT HANDLER ───────────────────────────────────── */
+/* ── STRIPE PAYMENT LINKS ───────────────────────────────── */
+const STRIPE_LINKS = {
+  collection: 'https://buy.stripe.com/4gMaEX0X3dxJeSgevF6oo00',
+  1: 'https://buy.stripe.com/eVq3cvgW1dxJ5hGdrB6oo06',  // El Espejo que Miente
+  2: 'https://buy.stripe.com/7sYcN59tz51d8tS4V56oo05',  // El Peso que No Se Ve
+  3: 'https://buy.stripe.com/cNicN549fdxJ5hG5Z96oo04',  // Cuando el Mañana te Secuestra
+  4: 'https://buy.stripe.com/14A4gz9tz3X9fWk0EP6oo03',   // El Día que Dejé de Ser lo que Era
+  5: 'https://buy.stripe.com/8x26oHdJP8dpcK8afp6oo02',  // La Única Certeza
+  6: 'https://buy.stripe.com/bJedR95dj65h39ybjt6oo01',  // El Eco del Silencio
+};
+
 function handleCheckout() {
   if (cart.length === 0) { showToast('Añade al menos un libro primero'); return; }
-  // Aquí conectarías con Stripe / Gumroad / tu plataforma
-  showToast('Redirigiendo al pago seguro…');
-  setTimeout(closeCart, 800);
+
+  // Colección completa
+  const hasCollection = cart.find(i => i.isCollection);
+  if (hasCollection) {
+    window.location.href = STRIPE_LINKS.collection;
+    return;
+  }
+
+  // Un solo libro individual → directo a Stripe
+  if (cart.length === 1) {
+    const link = STRIPE_LINKS[cart[0].id];
+    if (!link) { showToast('Enlace de pago no disponible'); return; }
+    window.location.href = link;
+    return;
+  }
+
+  // Varios libros → mostrar modal de upsell
+  const total = cart.reduce((sum, i) => sum + i.price, 0).toFixed(2).replace('.', ',');
+  const count = cart.length;
+  document.getElementById('upsell-count').textContent = count + (count === 2 ? ' libros' : ' libros');
+  document.getElementById('upsell-old-price').textContent = total + ' €';
+  document.getElementById('upsell-btn-yes').href = STRIPE_LINKS.collection;
+  document.getElementById('upsell-overlay').classList.add('open');
+}
+
+function closeUpsell(e) {
+  if (e.target === document.getElementById('upsell-overlay')) {
+    document.getElementById('upsell-overlay').classList.remove('open');
+  }
+}
+
+function showSeparateLinks() {
+  // Ocultar botón "no gracias" y mostrar lista de links
+  document.getElementById('upsell-btn-separate').style.display = 'none';
+  const linksDiv = document.getElementById('upsell-separate-links');
+  const listDiv = document.getElementById('upsell-links-list');
+  listDiv.innerHTML = '';
+  cart.forEach(item => {
+    const link = STRIPE_LINKS[item.id];
+    if (!link) return;
+    const row = document.createElement('div');
+    row.className = 'upsell-link-item';
+    row.innerHTML = `
+      <span class="upsell-link-item-title">${item.title}</span>
+      <a href="${link}" target="_blank" class="upsell-link-item-btn">Comprar · ${item.price.toFixed(2).replace('.', ',')} €</a>
+    `;
+    listDiv.appendChild(row);
+  });
+  linksDiv.style.display = 'block';
 }
 
 /* ── FAQ ACCORDION ──────────────────────────────────────── */
@@ -1437,5 +1740,19 @@ document.querySelectorAll('a[href^="#"]').forEach(a => {
 /* ── INIT ───────────────────────────────────────────────── */
 renderCart();
 </script>
+<script>
+    function ml_webform_success_37760055() {
+      var $ = ml_jQuery || jQuery;
+      $('.ml-subscribe-form-37760055 .row-success').show();
+      $('.ml-subscribe-form-37760055 .row-form').hide();
+    }
+      </script>
+  
+  
+      <script src="https://groot.mailerlite.com/js/w/webforms.min.js?v95037e5bac78f29ed026832ca21a7c7b" type="text/javascript"></script>
+        <script>
+            fetch("https://assets.mailerlite.com/jsonp/2139507/forms/180567539292570730/takel")
+        </script>
+
 </body>
 </html>
